@@ -49,7 +49,7 @@ function Institute( data ) {
   this.number = +data.number
 
   this.blz = data.blz || null
-  this.institute = data.institute || null
+  this.name = data.institute || null
   this.location = data.location || null
   this.serviceProvider = data.rz === 'eigenes Rechenzentrum' ?
     this.institute : ( data.rz || null )
