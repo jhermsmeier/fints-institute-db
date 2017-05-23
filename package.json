@@ -1,0 +1,37 @@
+{
+  "name": "fints-institute-db",
+  "version": "0.0.0",
+  "description": "Database of German Banks",
+  "license": "CC0-1.0",
+  "author": "Jonas Hermsmeier <jhermsmeier@gmail.com> (https://jhermsmeier.de)",
+  "keywords": [
+    "bank",
+    "hbci",
+    "fints",
+    "fintech",
+    "institute",
+    "banklist",
+    "germany",
+    "german",
+    "database"
+  ],
+  "main": "fints-institutes.json",
+  "dependencies": {},
+  "devDependencies": {
+    "csv-parser": "^1.11.0"
+  },
+  "peerDependencies": {},
+  "optionalDependencies": {},
+  "homepage": "https://github.com/jhermsmeier/fints-institute-db",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jhermsmeier/fints-institute-db.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jhermsmeier/fints-institute-db/issues"
+  },
+  "scripts": {
+    "build": "node scripts/transform.js",
+    "test": "node scripts/transform.js && node -e 'require(\".\")'"
+  }
+}

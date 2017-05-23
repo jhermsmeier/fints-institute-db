@@ -1,0 +1,10 @@
+.*
+*.md
+*.log
+
+benchmark
+doc
+example
+test
+scripts
+src
