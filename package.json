@@ -18,7 +18,8 @@
   "main": "fints-institutes.json",
   "dependencies": {},
   "devDependencies": {
-    "csv-parser": "^1.11.0"
+    "csv-parser": "^2.2.0",
+    "iconv-lite": "^0.4.24"
   },
   "peerDependencies": {},
   "optionalDependencies": {},

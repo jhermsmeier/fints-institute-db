@@ -2,6 +2,7 @@ var stream = require( 'stream' )
 var fs = require( 'fs' )
 var path = require( 'path' )
 var csvParser = require( 'csv-parser' )
+var iconv = require( 'iconv-lite' )
 
 function formatKey( key ) {
   switch( key ) {
@@ -84,7 +85,8 @@ function Institute( data ) {
 var source = path.join( __dirname, '..', 'src', 'fints_institute.csv' )
 var destination = path.join( __dirname, '..', 'fints-institutes.json' )
 
-var readStream = fs.createReadStream( source, { encoding: 'latin1' })
+var readStream = fs.createReadStream( source, { encoding: null })
+var decoder = iconv.decodeStream( 'cp437' )
 var writeStream = fs.createWriteStream( destination )
 var parser = csvParser({
   separator: ';',
@@ -138,6 +140,7 @@ var formatter = new stream.Transform({
 formatter.firstRow = false
 
 readStream
+  .pipe( decoder )
   .pipe( parser )
   .pipe( mapKeys )
   .pipe( transform )
