@@ -1,13 +1,13 @@
-var stream = require( 'stream' )
-var fs = require( 'fs' )
 var path = require( 'path' )
-var csvParser = require( 'csv-parser' )
-var iconv = require( 'iconv-lite' )
+var fs = require( 'fs' )
+var stream = require( 'stream' )
+var { StringDecoder } = require( 'string_decoder' )
 
 function formatKey( key ) {
   switch( key ) {
     case 'Nr.': return 'number'
     case 'BLZ': return 'blz'
+    case 'BIC': return 'bic'
     case 'Institut': return 'institute'
     case 'Ort': return 'location'
     case 'RZ': return 'rz'
@@ -45,104 +45,137 @@ function getDate( value ) {
     new Date( Date.UTC( +match[3], +match[2] - 1, +match[1] ) )
 }
 
-function Institute( data ) {
+class Institute {
+  constructor( data ) {
 
-  this.number = +data.number
+    this.number = +data.number
 
-  this.blz = data.blz || null
-  this.name = data.institute || null
-  this.location = data.location || null
-  this.serviceProvider = data.rz === 'eigenes Rechenzentrum' ?
-    this.institute : ( data.rz || null )
-  this.organisation = data.organisation || null
+    this.blz = data.blz || null
+    this.bic = data.bic || null
+    this.name = data.institute || null
+    this.location = data.location || null
+    this.serviceProvider = data.rz === 'eigenes Rechenzentrum' ?
+      this.institute : ( data.rz || null )
+    this.organisation = data.organisation || null
 
-  this.hbciDomain = data.hbciDomain || null
-  this.hbciAddress = data.hbciAddress === 'nicht unterstützt' ?
-    null : ( data.hbciAddress || null )
-  this.hbciVersion = data.hbciVersion || null
+    this.hbciDomain = data.hbciDomain || null
+    this.hbciAddress = data.hbciAddress === 'nicht unterstützt' ?
+      null : ( data.hbciAddress || null )
+    this.hbciVersion = data.hbciVersion || null
 
-  this.pinTanURL = data.pinTanURL || null
-  this.protocol = data.protocol || null
-  this.updated = getDate( data.updated )
+    this.pinTanURL = data.pinTanURL || null
+    this.protocol = data.protocol || null
+    this.updated = getDate( data.updated )
 
-  this.ddv = data.ddv === 'ja'
-  this.rdh1 = data.rdh1 === 'ja'
-  this.rdh2 = data.rdh2 === 'ja'
-  this.rdh3 = data.rdh3 === 'ja'
-  this.rdh4 = data.rdh4 === 'ja'
-  this.rdh5 = data.rdh5 === 'ja'
-  this.rdh6 = data.rdh6 === 'ja'
-  this.rdh7 = data.rdh7 === 'ja'
-  this.rdh8 = data.rdh8 === 'ja'
-  this.rdh9 = data.rdh9 === 'ja'
-  this.rdh10 = data.rdh10 === 'ja'
-  this.rah7 = data.rah7 === 'ja'
-  this.rah9 = data.rah9 === 'ja'
-  this.rah10 = data.rah10 === 'ja'
+    this.ddv = data.ddv === 'ja'
+    this.rdh1 = data.rdh1 === 'ja'
+    this.rdh2 = data.rdh2 === 'ja'
+    this.rdh3 = data.rdh3 === 'ja'
+    this.rdh4 = data.rdh4 === 'ja'
+    this.rdh5 = data.rdh5 === 'ja'
+    this.rdh6 = data.rdh6 === 'ja'
+    this.rdh7 = data.rdh7 === 'ja'
+    this.rdh8 = data.rdh8 === 'ja'
+    this.rdh9 = data.rdh9 === 'ja'
+    this.rdh10 = data.rdh10 === 'ja'
+    this.rah7 = data.rah7 === 'ja'
+    this.rah9 = data.rah9 === 'ja'
+    this.rah10 = data.rah10 === 'ja'
+
+  }
+}
+
+class Parser extends stream.Transform {
+
+  constructor( options ) {
+
+    options = options || {}
+    options.readableObjectMode = true
+
+    super( options )
+
+    this.header = null
+    this.decoder = new StringDecoder( 'utf8' )
+    this.lineBuffer = ''
+
+  }
+
+  _splitLines() {
+
+    var eol = '\r\n'
+    var index = -1
+    var offset = 0
+    var row = null
+    var data = null
+
+    while( ( index = this.lineBuffer.indexOf( eol, offset ) ) >= 0 ) {
+
+      row = this.lineBuffer.slice( offset, index ).split( '\t' )
+
+      if( this.header == null ) {
+        this.header = row
+      } else {
+        data = new Institute( row.reduce(( data, value, i ) => {
+          data[ formatKey( this.header[i] ) ] = value
+          return data
+        }, {}) )
+        this.push( data )
+      }
+
+      offset = index + eol.length
+
+    }
+
+    return offset
+
+  }
+
+  _transform( chunk, encoding, next ) {
+    this.lineBuffer += this.decoder.write( chunk )
+    this.lineBuffer = this.lineBuffer.slice( this._splitLines() )
+    next()
+  }
+
+  _flush( done ) {
+    if( !this.lineBuffer.length ) return done()
+    this.lineBuffer += this.decoder.end()
+    this.lineBuffer = this.lineBuffer.slice( this._splitLines() )
+    done()
+  }
 
 }
 
-var source = path.join( __dirname, '..', 'src', 'fints_institute.csv' )
-var destination = path.join( __dirname, '..', 'fints-institutes.json' )
+class Formatter extends stream.Transform {
 
-var readStream = fs.createReadStream( source, { encoding: null })
-var decoder = iconv.decodeStream( 'cp437' )
-var writeStream = fs.createWriteStream( destination )
-var parser = csvParser({
-  separator: ';',
-})
+  constructor( options ) {
 
-var mapKeys = new stream.Transform({
-  objectMode: true,
-  transform( data, _, next ) {
+    options = options || {}
+    options.writableObjectMode = true
 
-    var keys = Object.keys( data )
-    var result = {}
+    super( options )
 
-    keys.reduce( function( result, key ) {
-      result[ formatKey( key ) ] = data[key]
-      return result
-    }, result )
-
-    this.push( result )
-    next()
+    this.firstRow = true
 
   }
-})
 
-var transform = new stream.Transform({
-  objectMode: true,
-  transform( data, _, next ) {
-    if( !data.blz ) return next()
-    this.push( new Institute( data ) )
+  _transform( value, _, next ) {
+    this.push( this.firstRow ? '[\n' : ',\n' )
+    this.firstRow = false
+    this.push( '  ' + JSON.stringify( value ) )
     next()
   }
-})
 
-var formatter = new stream.Transform({
-  objectMode: true,
-  transform( institute, _, next ) {
-    if( !this.firstRow ) {
-      this.firstRow = true
-      this.push( '[\n' )
-    } else {
-      this.push( ',\n' )
-    }
-    this.push( '  ' + JSON.stringify( institute ) )
-    next()
-  },
-  flush( done ) {
-    this.push( '\n]' )
+  _flush( done ) {
+    this.push( '\n]\n' )
     done()
   }
-})
 
-formatter.firstRow = false
+}
 
-readStream
-  .pipe( decoder )
-  .pipe( parser )
-  .pipe( mapKeys )
-  .pipe( transform )
-  .pipe( formatter )
-  .pipe( writeStream )
+var source = path.join( __dirname, '..', 'src', 'fints_institute.tsv' )
+var destination = path.join( __dirname, '..', 'fints-institutes.json' )
+
+fs.createReadStream( source )
+  .pipe( new Parser() )
+  .pipe( new Formatter() )
+  .pipe( fs.createWriteStream( destination ) )
