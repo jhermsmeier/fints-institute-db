@@ -17,10 +17,7 @@
   ],
   "main": "fints-institutes.json",
   "dependencies": {},
-  "devDependencies": {
-    "csv-parser": "^2.2.0",
-    "iconv-lite": "^0.4.24"
-  },
+  "devDependencies": {},
   "peerDependencies": {},
   "optionalDependencies": {},
   "homepage": "https://github.com/jhermsmeier/fints-institute-db",
