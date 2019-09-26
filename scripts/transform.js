@@ -51,8 +51,13 @@ class Institute {
     this.number = +data.number
 
     this.blz = data.blz || null
-    this.bic = data.bic || null
+    this.bic = data.bic && data.bic != '0' ? data.bic : null
     this.name = data.institute || null
+
+    if( /Keine FinTS-Unterstützung/i.test( this.name ) ) {
+      this.name = null
+    }
+
     this.location = data.location || null
     this.serviceProvider = data.rz === 'eigenes Rechenzentrum' ?
       this.institute : ( data.rz || null )
