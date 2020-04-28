@@ -1,7 +1,7 @@
 {
   "name": "fints-institute-db",
   "version": "0.16.0",
-  "description": "Database of German Banks",
+  "description": "Database of German Banks and their HBCI / FinTS endpoints",
   "license": "CC0-1.0",
   "author": "Jonas Hermsmeier <jhermsmeier@gmail.com> (https://jhermsmeier.de)",
   "keywords": [
