@@ -16,6 +16,7 @@
     "database"
   ],
   "main": "fints-institutes.json",
+  "scripts": {},
   "dependencies": {},
   "devDependencies": {},
   "peerDependencies": {},
@@ -27,9 +28,5 @@
   },
   "bugs": {
     "url": "https://github.com/jhermsmeier/fints-institute-db/issues"
-  },
-  "scripts": {
-    "build": "node scripts/transform.js",
-    "test": "node scripts/transform.js && node -e 'require(\".\")'"
   }
 }
